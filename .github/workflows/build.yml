@@ -12,10 +12,10 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4 
       with:
         python-version: '3.x'
 
@@ -29,7 +29,7 @@ jobs:
         pyinstaller --onefile --name PackNMove file_compressor.py
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: PackNMove
         path: dist/PackNMove.exe
@@ -39,7 +39,7 @@ jobs:
     needs: build
     steps:
     - name: Download artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: PackNMove
         path: ./
