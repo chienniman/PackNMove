@@ -1,7 +1,7 @@
 import os
 import shutil
 import zipfile
-from tkinter import Tk, filedialog, Button, Label, StringVar, messagebox
+from tkinter import Tk, Frame, filedialog, Button, Label, StringVar, Text
 from tkinter.ttk import Progressbar
 from datetime import datetime
 from tqdm import tqdm
@@ -14,28 +14,37 @@ class FileCompressor:
     def __init__(self, master):
         self.master = master
         self.master.title("PackNMove")
+        self.master.geometry("600x400")
 
         self.source_folder = StringVar()
         self.dest_folder = StringVar()
+        self.status_message = StringVar()
 
         self.load_config()
 
-        Label(master, text="Source Folder:").grid(row=0, column=0, padx=5, pady=5)
-        self.source_label = Label(master, textvariable=self.source_folder)
+        self.container = Frame(master)
+        self.container.place(relx=0.5, rely=0.5, anchor="center")
+
+        Label(self.container, text="來源資料夾:").grid(row=0, column=0, padx=5, pady=5)
+        self.source_label = Label(self.container, textvariable=self.source_folder)
         self.source_label.grid(row=0, column=1, padx=5, pady=5)
 
-        Button(master, text="Browse", command=self.browse_source).grid(row=0, column=2, padx=5, pady=5)
+        Button(self.container, text="瀏覽", command=self.browse_source).grid(row=0, column=2, padx=5, pady=5)
 
-        Label(master, text="Destination Folder:").grid(row=1, column=0, padx=5, pady=5)
-        self.dest_label = Label(master, textvariable=self.dest_folder)
+        Label(self.container, text="目標資料夾:").grid(row=1, column=0, padx=5, pady=5)
+        self.dest_label = Label(self.container, textvariable=self.dest_folder)
         self.dest_label.grid(row=1, column=1, padx=5, pady=5)
 
-        Button(master, text="Browse", command=self.browse_dest).grid(row=1, column=2, padx=5, pady=5)
+        Button(self.container, text="瀏覽", command=self.browse_dest).grid(row=1, column=2, padx=5, pady=5)
 
-        self.progress = Progressbar(master, orient='horizontal', length=400, mode='determinate')
+        self.progress = Progressbar(self.container, orient='horizontal', length=400, mode='determinate')
         self.progress.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
-        Button(master, text="Start", command=self.start_compression).grid(row=3, column=1, pady=10)
+        Button(self.container, text="開始", command=self.start_compression).grid(row=3, column=1, pady=10)
+        Button(self.container, text="重置", command=self.reset_folders).grid(row=4, column=1, pady=10)
+
+        self.status_label = Label(self.container, textvariable=self.status_message)
+        self.status_label.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
 
     def load_config(self):
         try:
@@ -61,9 +70,16 @@ class FileCompressor:
         self.dest_folder.set(folder_selected)
         self.save_config()
 
+    def reset_folders(self):
+        self.source_folder.set("")
+        self.dest_folder.set("")
+        self.progress['value'] = 0
+        self.status_message.set("")
+        self.save_config()
+
     def start_compression(self):
         if not self.source_folder.get() or not self.dest_folder.get():
-            messagebox.showwarning("Warning", "Please select both source and destination folders.")
+            self.status_message.set("警告: 請選擇來源和目標資料夾。")
             return
 
         self.compress_files(self.source_folder.get(), self.dest_folder.get())
@@ -88,7 +104,7 @@ class FileCompressor:
         for mod_date, group_files in file_groups.items():
             archive_name = os.path.join(dest_folder, f"archive_{mod_date}.zip")
             with zipfile.ZipFile(archive_name, 'w') as archive:
-                for file in tqdm(group_files, desc=f"Compressing {mod_date}"):
+                for file in tqdm(group_files, desc=f"正在壓縮 {mod_date}"):
                     archive.write(file, os.path.basename(file))
                     self.progress['value'] = processed_files + 1
                     self.master.update_idletasks()
@@ -100,12 +116,12 @@ class FileCompressor:
 
         end_time = time.time()
         elapsed_time = end_time - start_time
-        stats_message = (f"PackNMove completed successfully!\n"
-                         f"Total files processed: {total_files}\n"
-                         f"Total size: {total_size / (1024 * 1024):.2f} MB\n"
-                         f"Time: {elapsed_time:.2f} seconds")
+        stats_message = (f"PackNMove 成功完成！\n"
+                         f"處理的檔案總數: {total_files}\n"
+                         f"總大小: {total_size / (1024 * 1024 * 1024):.2f} GB\n"
+                         f"用時: {elapsed_time:.2f} 秒")
 
-        messagebox.showinfo("Info", stats_message)
+        self.status_message.set(stats_message)
 
 if __name__ == "__main__":
     root = Tk()
